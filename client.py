@@ -3,7 +3,7 @@ import sys
 import threading
 
 # Listening ports for all sockets
-BROADCAST_PORT = 57697
+DYNAMIC_DISCOVERY_PORT = 57697
 TCP_PORT = 10005
 BUFFER_SIZE = 5120
 BROADCAST_PORT_CHAT = 58002
@@ -28,7 +28,8 @@ def broadcast_sender():
     # Set the socket to broadcast and enable reusing addresses
     b_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    b_socket.sendto(str.encode(BROADCAST_MESSAGE), ('<broadcast>', BROADCAST_PORT))
+    b_socket.sendto(str.encode(BROADCAST_MESSAGE),
+                    ('<broadcast>', DYNAMIC_DISCOVERY_PORT))
     print(c_address + " send broadcast message")
     print("Searching for server")
     # Wait for a response packet. If no packet has been received in 2 seconds, sleep then broadcast again
@@ -37,7 +38,8 @@ def broadcast_sender():
         # Continue if the leader sends a specific message back
         if data and data.startswith(str.encode(BROADCAST_ANSWER_SERVER)):
             set_server_address((address[0], data))
-            print(f'Found server at {server_address[0]} with message:', data.decode())
+            print(
+                f'Found server at {server_address[0]} with message:', data.decode())
     # Repeat after a timeout
     except TimeoutError:
         broadcast_sender()
@@ -80,7 +82,7 @@ def message_to_server(contents):
         # Close the socket
         client_socket.close()
 
-    except(ConnectionRefusedError, TimeoutError):
+    except (ConnectionRefusedError, TimeoutError):
         # Handling connection errors
         print('\rError - searching for server again')
         broadcast_sender()
