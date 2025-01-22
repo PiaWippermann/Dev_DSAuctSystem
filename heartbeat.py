@@ -70,8 +70,8 @@ def heartbeat_sender():
                     "server_uuid")
 
                 # udpate the group view by removing the neighbor that is offline
-                global_variables.server_list.remove(key=lambda x: x.get(
-                    "server_uuid") == global_variables.neighbor.get("server_uuid"))
+                global_variables.server_list = [
+                    server for server in global_variables.server_list if server["server_uuid"] != global_variables.neighbor["server_uuid"]]
 
                 # form the ring after neighbor server has been removed from the server list
                 participants_ring.form_ring()

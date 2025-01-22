@@ -24,7 +24,10 @@ def update_neighbor(direction='left'):
             current_node_index = i
             break
 
-    if direction == 'left':
+    if len(global_variables.server_list) == 1:
+        # server is the only server so no neighbor is set
+        global_variables.neighbor = None
+    elif direction == 'left':
         if current_node_index + 1 == len(global_variables.server_list):
             global_variables.neighbor = global_variables.server_list[0]
         else:
