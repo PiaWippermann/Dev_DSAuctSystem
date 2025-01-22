@@ -34,3 +34,11 @@ ENVIRONMENT_MESSAGE = {
     "message": "System environment has been updated",
     "sender_server_uuid": server_uuid
 }
+
+# auction related data
+is_auction_active = False
+active_auction_element = {
+    "client_uuid": "",
+    "element_name": "",
+    "highest_bid": 0
+}

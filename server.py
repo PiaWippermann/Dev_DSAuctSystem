@@ -5,6 +5,7 @@ import threading
 import broadcast
 import leader_election
 import heartbeat
+import auction_handler
 
 # import global variables
 import global_variables
@@ -44,6 +45,10 @@ if __name__ == '__main__':
     thread_heartbeat_sender = threading.Thread(
         target=heartbeat.heartbeat_sender)
     thread_heartbeat_sender.start()
+
+    thread_client_listener = threading.Thread(
+        target=auction_handler.client_listener)
+    thread_client_listener.start()
 
     # 3. start new leader election
     # server has been started, broadcast message is sent and all listeners are started

@@ -1,12 +1,19 @@
+from http import server
+import json
 import socket
 import sys
 import threading
+import uuid
+
+import global_variables
+import broadcast
 
 # Listening ports for all sockets
-DYNAMIC_DISCOVERY_PORT = 57697
 TCP_PORT = 10005
-BUFFER_SIZE = 5120
-BROADCAST_PORT_CHAT = 58002
+BROADCAST_PORT_AUCTION = 58002
+
+DYNAMIC_DISCOVERY_BROADCAST_IP = "255.255.255.255"
+BROADCAST_PORT = 5973
 
 # Messages for identification
 BROADCAST_MESSAGE = 'Could I join the Chatroom?'
@@ -15,70 +22,92 @@ BROADCAST_ANSWER_SERVER = 'Welcome'
 # Local host information
 MY_HOST = socket.gethostname()
 c_address = socket.gethostbyname(MY_HOST)
+client_uuid = str(uuid.uuid4())
 
-# Global variable to save the server address
-server_address = None
-
+# message definitions
+CLIENT_DISCOVERY_MESSAGE = {
+    "type": "client_discovery",
+    "client_server_uuid": client_uuid,
+    "client_address": c_address,
+    "message": "I want to join the auction"
+}
 
 # Broadcasts that this client is looking for a server
 # This shouts into the void until a server is found
+
+
 def broadcast_sender():
-    b_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Create a UDP socket
+    broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    print("Broadcast message of type: ", CLIENT_DISCOVERY_MESSAGE['type'])
+    broadcast_socket.sendto(json.dumps(CLIENT_DISCOVERY_MESSAGE).encode(
+    ), (DYNAMIC_DISCOVERY_BROADCAST_IP, BROADCAST_PORT))
 
-    # Set the socket to broadcast and enable reusing addresses
-    b_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    # if the broadcast message sent is a discovery message wait for a response
+    broadcast_socket.settimeout(2)
 
-    b_socket.sendto(str.encode(BROADCAST_MESSAGE),
-                    ('<broadcast>', DYNAMIC_DISCOVERY_PORT))
-    print(c_address + " send broadcast message")
-    print("Searching for server")
-    # Wait for a response packet. If no packet has been received in 2 seconds, sleep then broadcast again
     try:
-        data, address = b_socket.recvfrom(1024)
-        # Continue if the leader sends a specific message back
-        if data and data.startswith(str.encode(BROADCAST_ANSWER_SERVER)):
-            set_server_address((address[0], data))
-            print(
-                f'Found server at {server_address[0]} with message:', data.decode())
-    # Repeat after a timeout
-    except TimeoutError:
-        broadcast_sender()
-    b_socket.close()
+        # Wait for a response
+        data, addr = broadcast_socket.recvfrom(1024)
+        response = json.loads(data.decode())
 
+        global server_data
+        server_data = {
+            "server_address": response.get("server_address"),
+            "server_uuid": response.get("server_uuid")
+        }
 
-# Sets the server address which messages will be sent to
-def set_server_address(address: tuple):
-    global server_address
-    server_address = address
+    except socket.timeout:
+        # no server is responding
+        print("No servers found.")
 
 
 def handling_messages():
-    # Wait for user input (Chat-Message) and check whether it's usable
+    # Wait for user input
     while True:
-        message = input("Your message: \n")
-        if len(message) > BUFFER_SIZE / 10:
-            print('Message is too long')
-        # Send message to server via message_to_server-function
+        if (global_variables.is_auction_active):
+            user_input = input("Your bid to the element: \n")
+
+            try:
+                # only integers are taken from the user
+                user_input = int(user_input)  # convert input to integer
+            except ValueError:
+                print(f"You need to make a bid!")
+                continue
         else:
-            message_to_server(message)
+            user_input = input("Choose a new bid element: \n")
+
+        if len(user_input) > 1024 / 10:
+            print('Input is too long')
+            continue
+        # Send message to server
+        else:
+            message_to_server(user_input)
 
 
 # Sends a message to the server
 # If the server isn't there, the client starts searching again
-def message_to_server(contents):
-    # Encode the message using the sender's IP address and the message contents
-    message = str(c_address + ': ' + contents)
-    message = message.encode('ascii')
+def message_to_server(bid):
+    bid = str.encode(
+        json.dumps(
+            {
+                "client_uuid": client_uuid,
+                "bid": bid
+            }
+        )
+    )
 
     try:
         # Create a TCP socket
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Connect to the server
-        client_socket.connect((server_address[0], TCP_PORT))
+        client_socket.connect((server_data.get("server_address"), TCP_PORT))
         # Set the socket to be non-blocking
         client_socket.setblocking(False)
-        # Send the message
-        client_socket.send(message)
+        # Send the bid
+        client_socket.send(bid)
         # Close the socket
         client_socket.close()
 
@@ -95,7 +124,7 @@ def broadcast_listener():
     b_listener.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     try:
         # Bind the socket to the broadcast port for chat
-        b_listener.bind(("", BROADCAST_PORT_CHAT))
+        b_listener.bind(("", BROADCAST_PORT_AUCTION))
 
     except:
         pass
@@ -103,22 +132,18 @@ def broadcast_listener():
     while True:
         try:
             # Receive data and address from the broadcast
-            data, address = b_listener.recvfrom(BUFFER_SIZE)
+            data, address = b_listener.recvfrom(1024)
+            data = json.dumps(data).encode()
+
+            if (data.get("type") == "bid_update"):
+                print("New bid for '", data.get(
+                    "element_name", "' is ", data.get("highest_bid")))
+            elif (data.get("type") == "new_bid_element"):
+                print("New auction started for the following element: ",
+                      data.get("element_name"))
+
         except TimeoutError:
             pass
-
-        else:
-            # Filter out messages that were sent by this client
-            if ((data.decode()).split(":")[0].split("'")[0]) != c_address:
-
-                if data:
-                    # Print the received message and prompt for a new message
-                    print("\033[1A\r" + data.decode())
-                    print("Your message: ")
-
-    # Close the socket and exit the program
-    b_listener.close()
-    sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -128,7 +153,9 @@ if __name__ == '__main__':
     threadBL = threading.Thread(target=broadcast_listener)
     # Start the broadcast listener thread
     threadBL.start()
-    # Create a thread for handling messages
-    threadHM = threading.Thread(target=handling_messages)
-    # Start the handling messages thread
-    threadHM.start()
+
+    if (server_data.get("server_address") != None):
+        # Create a thread for handling messages
+        threadHM = threading.Thread(target=handling_messages)
+        # Start the handling messages thread
+        threadHM.start()

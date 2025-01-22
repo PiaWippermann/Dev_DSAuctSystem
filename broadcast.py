@@ -17,6 +17,14 @@ DYNAMIC_DISCOVERY_BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 5973
 DYNAMIC_DISCOVERY_BROADCAST_TIMEOUT = 2
 
+# message definitions
+CLIENT_DISCOVERY_MESSAGE_RESPONSE = {
+    "type": "client_discovery",
+    "server_address": global_variables.s_address,
+    "server_uuid": global_variables.server_uuid,
+    "message": "You joined the auction!"
+}
+
 ###########################################################
 
 # FUNCTION DEFINITIONS
@@ -120,7 +128,7 @@ def broadcast_listener():
                 print(
                     f"{global_variables.s_address} new neighbor: {global_variables.neighbor}")
 
-            # 3.
+            # 3. leader server has changed
             elif message.get("type") == "COORDINATOR":
                 # message received if a server that announces itself as the leader server
                 # set the leader server
@@ -133,6 +141,23 @@ def broadcast_listener():
                     # if the new leader server has a lower uuid then a new leader election is started
                     print("New leader server has a lower server uuid than me.")
                     leader_election.start_leader_election()
+
+            # 4. client wants to join the system
+            # only answer if the current server is the leader server
+            if message.get("type") == "client_discovery":
+                print(
+                    f"Client-Discovery-Message received from {addr}: {message}")
+
+                # check if the current server is the leader server
+                if (global_variables.leader_server.get("leader_server_uuid") == global_variables.server_uuid):
+                    print("I am the leader server and I will integrate the new client")
+                    # send a message to the requesting server
+                    # TODO: find the server to be sent back to the client
+
+                    # send the response to the client
+                    listen_socket.sendto(json.dumps(
+                        CLIENT_DISCOVERY_MESSAGE_RESPONSE).encode(), addr)
+                    print(f"Send dynamic discovery response to a client")
 
         except Exception as e:
             print(f"Fehler beim Empfangen von Broadcast-Nachrichten: {e}")
