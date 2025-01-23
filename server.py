@@ -1,6 +1,5 @@
 import threading
 
-
 # import auction functions in other files
 import broadcast
 import leader_election
@@ -19,7 +18,10 @@ SERVER_DISCOVERY_MESSAGE = {
 }
 
 if __name__ == '__main__':
-    print("Server UUID: ", global_variables.server_uuid)
+    print("\n" + "=" * 50)
+    print("### SERVER SETUP ###")
+    print(f"Server UUID: {global_variables.server_uuid}")
+    print("=" * 50)
 
     # 1. send a broadcast messsage to discover other servers in the network
     broadcast.broadcast_sender(SERVER_DISCOVERY_MESSAGE)

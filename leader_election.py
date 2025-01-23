@@ -51,7 +51,7 @@ def start_leader_election():
             "leader_server_address": global_variables.s_address
         }
         # no need to inform other servers as there are no other servers
-        print("I am the only server so I am the leader.")
+        print("I am the only server so I am the leader.\n")
     else:
         send_election_messages()
 
@@ -83,7 +83,7 @@ def send_election_messages():
             leader_election_socket.sendto(json.dumps(election_message).encode(
             ), (global_variables.server_list[i].get("server_address"), ELECTION_PORT))
 
-            print("ELECTION message sent to server at position {i}.")
+            print(f"ELECTION message sent to server at position {i}.\n")
 
             leader_election_socket.settimeout(2)
 
@@ -91,7 +91,7 @@ def send_election_messages():
                 message, addr = leader_election_socket.recvfrom(1024)
                 message = json.loads(message.decode())
                 if (message.get("type") == "ALIVE"):
-                    print("Received an alive message")
+                    print("Received an ALIVE message\n")
 
             except TimeoutError:
                 send_victory_message()
@@ -113,7 +113,7 @@ def send_victory_message():
         "leader_server_address": global_variables.s_address
     }
 
-    print(f"I am the leader server {global_variables.server_uuid}")
+    print(f"I am the leader server {global_variables.server_uuid}\n")
 
     # send a broadcast message to all servers
     broadcast.broadcast_sender(election_message)

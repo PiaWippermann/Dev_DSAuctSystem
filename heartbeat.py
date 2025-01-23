@@ -39,6 +39,7 @@ def handle_heartbeat_message(message, addr):
 
 
 def heartbeat_sender():
+    print("Start sending heartbeats if a neighbor is found.\n")
     heartbeat_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     heartbeat_socket.setsockopt(
         socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -48,7 +49,6 @@ def heartbeat_sender():
         "sender_server_uuid": global_variables.server_uuid
     }
 
-    """Sendet regelmäßig HEARTBEAT-Nachrichten an den Nachbarn."""
     while True:
         if (global_variables.neighbor != None):
             # print(f"Send HEARTBEAT to neighbour: ",
@@ -65,7 +65,9 @@ def heartbeat_sender():
 
             except socket.timeout:
                 # no server is responding
-                print("No heartbeat received from neighbor. Update the group view.")
+                print("### NEIGHBOR OFFLINE ###")
+                print("Update the group view")
+
                 old_neighbor_server_uuid = global_variables.neighbor.get(
                     "server_uuid")
 
@@ -88,7 +90,6 @@ def heartbeat_sender():
                     leader_election.start_leader_election()
 
         else:
-            print(f"Server has no neighbor configured!")
             # wait for 5 seconds to try sending the heartbeat message again and check if the server has a neighbor now
             time.sleep(5)
         time.sleep(1)

@@ -3,6 +3,8 @@ import socket
 
 # GLOBAL VARIABLES THAT NEED TO BE ACCESSIBLE IN MULTIPLE FILES
 
+is_client = False
+
 # server address
 MY_HOST = socket.gethostname()
 s_address = socket.gethostbyname(MY_HOST)
