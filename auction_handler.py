@@ -1,6 +1,6 @@
 import json
 import socket
-from time import sleep
+import time
 import threading
 
 import global_variables
@@ -19,6 +19,8 @@ AUCTION_UPDATE_MESSAGE = {
     },
     "sender_server_uuid": global_variables.server_uuid
 }
+
+last_auction_status_change = time.time()
 
 
 def client_listener():
@@ -96,6 +98,9 @@ def handle_new_client_bid(bid):
         "active_auction_element")
 
     auction_update_sender(AUCTION_UPDATE_MESSAGE)
+    # start the auction timer if the leader server received the message from the client
+    if (global_variables.leader_server.get("leader_server_uuid") == global_variables.server_uuid):
+        start_auction_timer()
 
 
 def handle_new_client_auction_element(bid_element):
@@ -115,9 +120,12 @@ def handle_new_client_auction_element(bid_element):
 
     auction_update_sender(AUCTION_UPDATE_MESSAGE)
 
+    # start the auction timer if the leader server received the message from the client
+    if (global_variables.leader_server.get("leader_server_uuid") == global_variables.server_uuid):
+        start_auction_timer()
 
-# Method only called by the leader server
-# All servers and clients are updated with the given message
+
+# All other servers and clients are updated with the given message
 def auction_update_sender(auction_message):
     # address can be '255.255.255.255' or the leader_server_address depending on the sender
     auction_update_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -158,6 +166,10 @@ def auction_update_listener():
                 if (global_variables.is_client):
                     print(
                         f"\n ### NEW BID ELEMENT ###\nPlease insert your bids for the element: {global_variables.active_auction_element.get('element_name')}\n")
+
+                # start the auction timer if the leader server received the message
+                if (global_variables.leader_server.get("leader_server_uuid") == global_variables.server_uuid):
+                    start_auction_timer()
         # new highest bid for the active element
         elif (message.get("type") == "auction_element_update"):
             if (global_variables.active_auction_element.get("highest_bid") < message["active_auction_element"].get("highest_bid")):
@@ -168,12 +180,20 @@ def auction_update_listener():
                 if (global_variables.is_client):
                     print(
                         f"\n ### NEW HIGHEST BID ###\nThe new highest bid is: {global_variables.active_auction_element.get('highest_bid')}\n")
+
+                # start the auction timer if the leader server received the message
+                if (global_variables.leader_server.get("leader_server_uuid") == global_variables.server_uuid):
+                    start_auction_timer()
         # active auction is completed
         elif (message.get("type") == "auction_completed"):
             # inform the user that the auction has been completed
             if (global_variables.is_client):
-                print(
-                    f"\n ### AUCTION COMPLETED ###\nThe element is sold to: {global_variables.active_auction_element.get('client_uuid')}.\nThe bid is: {global_variables.active_auction_element['highest_bid']}\n")
+                if (message["active_auction_element"].get("client_uuid") == message["active_auction_element"].get("client_uuid")):
+                    print(
+                        f"\n ### AUCTION COMPLETED ###\nYour are the winner!\nYour bid is: {message['active_auction_element'].get('highest_bid')}\n")
+                else:
+                    print(
+                        f"\n ### AUCTION COMPLETED ###\nThe element is sold to: {message['active_auction_element'].get('client_uuid')}.\nThe bid is: {message['active_auction_element'].get('highest_bid')}\n")
 
             global_variables.is_auction_active = False
             global_variables.active_auction_element = {
@@ -182,5 +202,34 @@ def auction_update_listener():
                 "highest_bid": 0
             }
         # message only for clients informing that the client has 30 more seconds to bid on the active element
-        elif (global_variables.is_client & message.get("type") == "auction_timer_information"):
+        elif (global_variables.is_client & (message.get("type") == "auction_timer_information")):
             print("### 30 MORE SECONDS TO ENTER YOUR BID ###\n")
+
+
+# Method called when the action status changes (new auction element or new highest bid)
+# If there is no auction status change within one minute the auction is closed by the leader server
+# After 30 seconds all clients are informed about the remaining time
+def start_auction_timer():
+    last_auction_status_change = time.time()
+    # wait for 30 seconds
+    time.sleep(30)
+    # check if the auction status has changed again
+    if (time.time() - last_auction_status_change >= 30):
+        # status has not changed
+        # inform all clients that 30 seconds are left to make a bid
+        auction_information_message = {
+            "type": "auction_timer_information",
+            "sender_server_uuid": global_variables.server_uuid
+        }
+        auction_update_sender(auction_information_message)
+
+        # wait for 30 seconds more
+        time.sleep(30)
+        # check if the auction status has changed now
+        if (time.time() - last_auction_status_change >= 60):
+            auction_completed_message = {
+                "type": "auction_completed",
+                "sender_server_uuid": global_variables.server_uuid,
+                "active_auction_element": global_variables.active_auction_element
+            }
+            auction_update_sender(auction_completed_message)

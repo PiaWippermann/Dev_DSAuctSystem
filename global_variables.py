@@ -9,8 +9,11 @@ is_client = False
 MY_HOST = socket.gethostname()
 s_address = socket.gethostbyname(MY_HOST)
 
-# uuid of the server itself
+# uuid of the client
 server_uuid = str(uuid.uuid4())
+
+# uuid of the client
+client_uuid = str(uuid.uuid4())
 
 # uuid of the leader server in the system
 leader_server = {

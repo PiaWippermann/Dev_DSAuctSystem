@@ -21,12 +21,11 @@ BROADCAST_ANSWER_SERVER = 'Welcome'
 # Local host information
 MY_HOST = socket.gethostname()
 c_address = socket.gethostbyname(MY_HOST)
-client_uuid = str(uuid.uuid4())
 
 # message definitions
 CLIENT_DISCOVERY_MESSAGE = {
     "type": "client_discovery",
-    "client_server_uuid": client_uuid,
+    "client_server_uuid": global_variables.client_uuid,
     "client_address": c_address,
     "message": "I want to join the auction"
 }
@@ -94,7 +93,12 @@ def handling_messages():
                 if (global_variables.is_auction_active):
                     user_input = input(
                         f"### ACTIVE AUCTION ###\nAuction element: '{global_variables.active_auction_element['element_name']}': \n Currently the highest bid is: {global_variables.active_auction_element['highest_bid']}\n Enter your bid:\n")
+                else:
+                    user_input = input("Choose a new bid element: \n")
 
+                # separate condition for checking if global_variables.is_auction_active is required
+                # global auction status could have been changed in the time between the promt to insert a new auction or make a new bid and handling the user input
+                if (global_variables.is_auction_active):
                     if not user_input.strip():
                         print("Empty message. Please try again.\n")
                         continue
@@ -110,7 +114,7 @@ def handling_messages():
                         bid = str.encode(
                             json.dumps(
                                 {
-                                    "client_uuid": client_uuid,
+                                    "client_uuid": global_variables.client_uuid,
                                     "bid": user_input
                                 }
                             )
@@ -119,7 +123,6 @@ def handling_messages():
                         print(f"You need to make a bid! \n")
                         continue
                 else:
-                    user_input = input("Choose a new bid element: \n")
                     if not user_input.strip():
                         print("Empty message. Please try again. \n")
                         continue
@@ -127,7 +130,7 @@ def handling_messages():
                     bid = str.encode(
                         json.dumps(
                             {
-                                "client_uuid": client_uuid,
+                                "client_uuid": global_variables.client_uuid,
                                 "element_name": user_input
                             }
                         )
