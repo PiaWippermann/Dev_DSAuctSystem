@@ -25,7 +25,7 @@ c_address = socket.gethostbyname(MY_HOST)
 # message definitions
 CLIENT_DISCOVERY_MESSAGE = {
     "type": "client_discovery",
-    "client_server_uuid": global_variables.client_uuid,
+    "client_server_uuid": global_variables.client_address,
     "client_address": c_address,
     "message": "I want to join the auction"
 }
@@ -89,55 +89,80 @@ def handling_messages():
             client_socket.connect(
                 (server_data.get("server_address"), TCP_PORT))
 
+            socket_socketname = client_socket.getsockname()
+            if (len(socket_socketname) == 2):
+                global_variables.client_address = f"({socket_socketname[0]}, {socket_socketname[1]})"
+
             while True:
                 if (global_variables.is_auction_active):
-                    user_input = input(
-                        f"### ACTIVE AUCTION ###\nAuction element: '{global_variables.active_auction_element['element_name']}': \n Currently the highest bid is: {global_variables.active_auction_element['highest_bid']}\n Enter your bid:\n")
+                    # check if the client is the owner of the currently active auction element
+                    if (global_variables.active_auction_element.get("bid_owner_client_address") == global_variables.client_address):
+                        user_input = input(
+                            f"There is an active auction element made by you. Type 'break' when you want to sell your element.\n")
+                    else:
+                        user_input = input(
+                            f"### ACTIVE AUCTION ###\nAuction element: '{global_variables.active_auction_element['element_name']}': \n Currently the highest bid is: {global_variables.active_auction_element['highest_bid']}\n Enter your bid:\n")
                 else:
                     user_input = input("Choose a new bid element: \n")
 
                 # separate condition for checking if global_variables.is_auction_active is required
                 # global auction status could have been changed in the time between the promt to insert a new auction or make a new bid and handling the user input
                 if (global_variables.is_auction_active):
-                    if not user_input.strip():
-                        print("Empty message. Please try again.\n")
-                        continue
-
-                    try:
-                        # only integers are taken from the user
-                        # convert input to integer
-                        user_input = int(user_input)
-
-                        if (global_variables.active_auction_element.get("highest_bid") > user_input):
-                            print("You need to make a higher bid!")
-
-                        bid = str.encode(
-                            json.dumps(
-                                {
-                                    "client_uuid": global_variables.client_uuid,
-                                    "bid": user_input
-                                }
+                    if (global_variables.active_auction_element.get("bid_owner_client_address") == global_variables.client_address):
+                        if (user_input == "break"):
+                            global_variables.is_auction_active = False
+                            bid_message = str.encode(
+                                json.dumps(
+                                    {
+                                        "type": "auction_completed"
+                                    }
+                                )
                             )
-                        )
-                    except ValueError:
-                        print(f"You need to make a bid! \n")
-                        continue
+                        else:
+                            continue
+                    else:
+                        if not user_input.strip():
+                            print("Empty message. Please try again.\n")
+                            continue
+
+                        try:
+                            # only integers are taken from the user
+                            # convert input to integer
+                            user_input = int(user_input)
+
+                            if (global_variables.active_auction_element.get("highest_bid") > user_input):
+                                print("You need to make a higher bid!")
+
+                            bid_message = str.encode(
+                                json.dumps(
+                                    {
+                                        "client_address": global_variables.client_address,
+                                        "bid": user_input,
+                                        "type": "auction_element_update"
+                                    }
+                                )
+                            )
+                        except ValueError:
+                            print(f"You need to make a bid! \n")
+                            continue
                 else:
                     if not user_input.strip():
                         print("Empty message. Please try again. \n")
                         continue
 
-                    bid = str.encode(
+                    bid_message = str.encode(
                         json.dumps(
                             {
-                                "client_uuid": global_variables.client_uuid,
-                                "element_name": user_input
+                                "bid_owner_client_address": global_variables.client_address,
+                                "client_address": global_variables.client_address,
+                                "element_name": user_input,
+                                "type": "auction_element_new"
                             }
                         )
                     )
 
                 # Send message to server
-                client_socket.send(bid)
+                client_socket.send(bid_message)
 
                 # Antwort vom Server empfangen
                 response = client_socket.recv(1024).decode('utf-8')

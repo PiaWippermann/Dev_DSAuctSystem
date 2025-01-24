@@ -13,7 +13,7 @@ s_address = socket.gethostbyname(MY_HOST)
 server_uuid = str(uuid.uuid4())
 
 # uuid of the client
-client_uuid = str(uuid.uuid4())
+client_address = ""
 
 # uuid of the leader server in the system
 leader_server = {
@@ -43,7 +43,8 @@ ENVIRONMENT_MESSAGE = {
 # auction related data
 is_auction_active = False
 active_auction_element = {
-    "client_uuid": "",
+    "client_address": "",
     "element_name": "",
-    "highest_bid": 0
+    "highest_bid": 0,
+    "bid_owner_client_address": ""
 }

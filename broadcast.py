@@ -12,24 +12,12 @@ import participants_ring
 
 ###########################################################
 
-# needed for the leader server
-# increased each time a client is added to the system until len(server_list) is reached
-# server at index server_index is assigned to the next incoming client
-server_index = 0
+SERVER_INDEX = 0
 
 # port definitions
 DYNAMIC_DISCOVERY_BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 5973
 DYNAMIC_DISCOVERY_BROADCAST_TIMEOUT = 2
-
-# message definitions
-CLIENT_DISCOVERY_MESSAGE_RESPONSE = {
-    "type": "client_discovery",
-    "server_address": global_variables.s_address,
-    "server_uuid": global_variables.server_uuid,
-    "is_auction_active": global_variables.is_auction_active,
-    "active_auction_element": global_variables.active_auction_element
-}
 
 ###########################################################
 
@@ -71,9 +59,8 @@ def broadcast_sender(broadcast_message):
             print("### NO OTHER SERVERS FOUND ###")
             print("=" * 50)
 
+
 # Called after the server
-
-
 def broadcast_listener():
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -111,12 +98,19 @@ def broadcast_listener():
                     # update the neighbor of the leader server as well
                     participants_ring.update_neighbor()
 
+                    environment_message = {
+                        "type": "environment_update",
+                        "server_list": global_variables.server_list,
+                        "message": "System environment has been updated",
+                        "sender_server_uuid": global_variables.server_uuid
+                    }
+
                     # send a message to the requesting server
                     listen_socket.sendto(json.dumps(
-                        global_variables.ENVIRONMENT_MESSAGE).encode(), addr)
+                        environment_message).encode(), addr)
 
                     # send broadcast message to all servers with the updated sorted group_view
-                    broadcast_sender(global_variables.ENVIRONMENT_MESSAGE)
+                    broadcast_sender(environment_message)
 
             # 2. the server environment has changed
             elif message.get("type") == "environment_update":
@@ -150,19 +144,36 @@ def broadcast_listener():
                     print("Client wants to join the auction.")
 
                     server_address = global_variables.s_address
+                    server_uuid = global_variables.server_uuid
+
+                    global SERVER_INDEX
                     # select a server that is assigned to the client
-                    if (server_index < len(global_variables.server_list)):
-                        server_address = global_variables.server_list[server_index].get(
+                    if (SERVER_INDEX < len(global_variables.server_list)):
+                        server_address = global_variables.server_list[SERVER_INDEX].get(
                             "server_address")
+                        server_uuid = global_variables.server_list[SERVER_INDEX].get(
+                            "server_uuid")
+                        SERVER_INDEX = SERVER_INDEX + 1
                     else:
-                        server_address = 0
+                        SERVER_INDEX = 0
+                        server_address = global_variables.server_list[SERVER_INDEX].get(
+                            "server_address")
+                        server_uuid = global_variables.server_list[SERVER_INDEX].get(
+                            "server_uuid")
+                        SERVER_INDEX = SERVER_INDEX + 1
 
                     # set the discovery message response
-                    CLIENT_DISCOVERY_MESSAGE_RESPONSE["server_address"] = server_address
+                    client_discovery_message_response = {
+                        "type": "client_discovery",
+                        "server_address": server_address,
+                        "server_uuid": server_uuid,
+                        "is_auction_active": global_variables.is_auction_active,
+                        "active_auction_element": global_variables.active_auction_element
+                    }
 
                     # send the response to the client
                     listen_socket.sendto(json.dumps(
-                        CLIENT_DISCOVERY_MESSAGE_RESPONSE).encode(), addr)
+                        client_discovery_message_response).encode(), addr)
                     print(f"Client successfully included.")
 
         except Exception as e:

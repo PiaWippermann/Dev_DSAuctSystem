@@ -1,3 +1,4 @@
+from concurrent.futures import thread
 import threading
 
 # import auction functions in other files
@@ -51,6 +52,10 @@ if __name__ == '__main__':
     thread_client_listener = threading.Thread(
         target=auction_handler.client_listener)
     thread_client_listener.start()
+
+    thread_auction_listener = threading.Thread(
+        target=auction_handler.auction_update_listener)
+    thread_auction_listener.start()
 
     # 3. start new leader election
     # server has been started, broadcast message is sent and all listeners are started
