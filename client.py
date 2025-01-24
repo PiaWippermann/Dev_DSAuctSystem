@@ -161,8 +161,6 @@ def handling_messages():
                         )
                     )
 
-                    global_variables.is_auction_active = True
-
                 # Send message to server
                 client_socket.send(bid_message)
 
