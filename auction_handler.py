@@ -192,12 +192,15 @@ def auction_update_listener():
                     print(
                         f"\n ### AUCTION COMPLETED ###\nYour are the winner!\nYour bid is: {message['active_auction_element'].get('highest_bid')}\n")
                     print("Choose a new bid element:")
-                elif (global_variables.client_address == message["active_auction_element"].get("client_address")):
+                elif ((global_variables.client_address == message["active_auction_element"].get("client_address")) & (global_variables.client_address == message["active_auction_element"].get("bid_owner_client_address"))):
                     print(
                         "\n ### AUCTION COMPLETED ###\nYou did not sell the element\n")
                 else:
                     print(
                         f"\n ### AUCTION COMPLETED ###\nElement sold to {message['active_auction_element'].get('client_address')}\nThe bid is: {message['active_auction_element'].get('highest_bid')}\n")
+
+                    if (global_variables.client_address != message["active_auction_element"].get("bid_owner_client_address")):
+                        print("Choose a new bid element:")
 
             global_variables.is_auction_active = False
             global_variables.active_auction_element = {
