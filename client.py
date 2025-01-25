@@ -30,9 +30,12 @@ CLIENT_DISCOVERY_MESSAGE = {
     "message": "I want to join the auction"
 }
 
+server_data = None
 
 # Broadcasts that this client is looking for a server
 # This shouts into the void until a server is found
+
+
 def broadcast_sender():
     global server_data
     server_data = None
@@ -82,6 +85,8 @@ def broadcast_sender():
 
 
 def handling_messages():
+    global server_data
+
     while True:
         try:
             # Verbindung zum Server herstellen
