@@ -1,3 +1,14 @@
+"""
+heartbeat.py
+
+File that handles the fault tolerance of the servers.
+Heartbeat method is implemented here
+
+- hearbeat listener
+- heartbeat sender
+
+"""
+
 import time
 import socket
 import json
@@ -12,6 +23,10 @@ LAST_HEARTBEAT_TIME = time.time()
 
 
 def heartbeat_listener():
+    """
+    Continuously listens to incoming heartbeat messages
+
+    """
     heartbeat_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     heartbeat_socket.setsockopt(
         socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -23,6 +38,11 @@ def heartbeat_listener():
 
 
 def handle_heartbeat_message(message, addr):
+    """
+    Handles incoming heartbeat messages.
+    Heartbeat messages can be the HEARTBEAT itself but also HEARTBEAT_ACK.
+
+    """
     heartbeat_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     heartbeat_socket.setsockopt(
         socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -39,6 +59,11 @@ def handle_heartbeat_message(message, addr):
 
 
 def heartbeat_sender():
+    """
+    Sends periodically heartbeats and listens for responses from the neighbor.
+    Neighbor is announced to be offline if there is no response after a certain amount of heartbeats without any response.
+
+    """
     heartbeat_count = 0
 
     print("Start sending heartbeats if a neighbor is found.\n")

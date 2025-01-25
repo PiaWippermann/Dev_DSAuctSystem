@@ -1,7 +1,18 @@
+"""
+client.py
+
+File that is run to start a client.
+Dynamic discovery of hosts for a client is implemented as well as handling the user input.
+Interaction with the user depends on the current status of the auction.
+
+- broadcast sender for dynamic discovery of hosts
+- user handler
+
+"""
+
 import json
 import socket
 import threading
-import uuid
 import time
 
 import global_variables
@@ -25,9 +36,13 @@ c_address = socket.gethostbyname(MY_HOST)
 server_data = None
 
 
-# Broadcasts that this client is looking for a server
-# This shouts into the void until a server is found
 def broadcast_sender():
+    """
+    Broadcast is sent to all servers.
+    Waiting for a response from the leader server.
+    Repeats this process until the client is included in the system
+
+    """
     global server_data
     server_data = None
 
@@ -80,6 +95,12 @@ def broadcast_sender():
 
 
 def handling_messages():
+    """
+    Function that is run after the client is included in the system.
+    Handles the user input and sends the user input to the server that is assigned to this client.
+    If this server is offline then a new broadcast message is sent to all servers.
+
+    """
     global server_data
 
     while True:

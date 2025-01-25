@@ -1,5 +1,13 @@
-# File that contains functions regarding the leader election
-# Bully algorithm is used for that
+"""
+leader_election.py
+
+File containing functions regarding the leader election.
+Leader election is done with the Bully Algorithm.
+
+- leader election listener
+- leader election starter
+
+"""
 
 from ctypes import addressof
 import json
@@ -17,6 +25,10 @@ ELECTION_PORT = 10001
 
 
 def leader_election_listener():
+    """
+    Listens to incoming election messages
+
+    """
     leader_election_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     leader_election_socket.setsockopt(
         socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -27,6 +39,10 @@ def leader_election_listener():
 
 
 def handle_election_message(socket, message, addr):
+    """
+    Handles election messages depending on the type of election message which can be ELECTION or ALIVE messages
+
+    """
     # message that indicates to start an election
     message = json.loads(message.decode())
     if message.get("type") == "ELECTION":
@@ -42,6 +58,10 @@ def handle_election_message(socket, message, addr):
 
 
 def start_leader_election():
+    """
+    Function called to start a new leader election
+
+    """
     print("Leader election startet.")
 
     # if the server list only consists of this server it is set as the leader server
@@ -56,8 +76,11 @@ def start_leader_election():
         send_election_messages()
 
 
-# Server sends the election message to all servers with a higher server_uuid
 def send_election_messages():
+    """
+    Sending the election messages to all servers with a higher uuid.
+    Waiting for any alive messages and sends the victory message if no alive message is received.
+    """
     # get the index of the server in the server list
     current_node_index = -1
     for i in range(len(global_variables.server_list)):
@@ -98,6 +121,9 @@ def send_election_messages():
 
 
 def send_victory_message():
+    """
+    Function called to announce the server as the leader
+    """
     election_message = {
         "type": "COORDINATOR",
         "leader_server": {
