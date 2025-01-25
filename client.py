@@ -22,31 +22,26 @@ BROADCAST_ANSWER_SERVER = 'Welcome'
 MY_HOST = socket.gethostname()
 c_address = socket.gethostbyname(MY_HOST)
 
-# message definitions
-CLIENT_DISCOVERY_MESSAGE = {
-    "type": "client_discovery",
-    "client_server_uuid": global_variables.client_address,
-    "client_address": c_address,
-    "message": "I want to join the auction"
-}
-
 server_data = None
+
 
 # Broadcasts that this client is looking for a server
 # This shouts into the void until a server is found
-
-
 def broadcast_sender():
     global server_data
     server_data = None
+
+    client_discovery_message = {
+        "type": "client_discovery"
+    }
 
     # Create a UDP socket
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     print(
-        f"Client sends broadcast message of type: {CLIENT_DISCOVERY_MESSAGE['type']} \n")
-    broadcast_socket.sendto(json.dumps(CLIENT_DISCOVERY_MESSAGE).encode(
+        f"Client sends broadcast message of type: {client_discovery_message['type']} \n")
+    broadcast_socket.sendto(json.dumps(client_discovery_message).encode(
     ), (DYNAMIC_DISCOVERY_BROADCAST_IP, BROADCAST_PORT))
 
     # if the broadcast message sent is a discovery message wait for a response

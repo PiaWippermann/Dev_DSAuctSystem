@@ -25,11 +25,10 @@ def client_listener():
 
 
 def handle_client(client_socket, client_address):
-    print(f"Client {client_address} connected.")
+    print(f"Client {client_address[0]} connected.")
 
     # init the client address as a string
-    if (len(client_address) == 2):
-        client_address = f"({client_address[0]}, {client_address[1]})"
+    client_address = client_address[0]
 
     while True:
         try:
