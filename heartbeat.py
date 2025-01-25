@@ -39,6 +39,8 @@ def handle_heartbeat_message(message, addr):
 
 
 def heartbeat_sender():
+    heartbeat_count = 0
+
     print("Start sending heartbeats if a neighbor is found.\n")
     heartbeat_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     heartbeat_socket.setsockopt(
@@ -62,32 +64,38 @@ def heartbeat_sender():
                 # Wait for a response
                 data, addr = heartbeat_socket.recvfrom(1024)
                 response = json.loads(data.decode())
+                heartbeat_count = 0
 
             except socket.timeout:
-                # no server is responding
-                print("### NEIGHBOR OFFLINE ###")
-                print("Update the group view")
+                if (heartbeat_count < 5):
+                    heartbeat_count = heartbeat_count + 1
+                else:
+                    # no server is responding
+                    print("### NEIGHBOR OFFLINE ###")
+                    print("Update the group view")
 
-                old_neighbor_server_uuid = global_variables.neighbor.get(
-                    "server_uuid")
+                    old_neighbor_server_uuid = global_variables.neighbor.get(
+                        "server_uuid")
 
-                # udpate the group view by removing the neighbor that is offline
-                global_variables.server_list = [
-                    server for server in global_variables.server_list if server["server_uuid"] != global_variables.neighbor["server_uuid"]]
+                    # udpate the group view by removing the neighbor that is offline
+                    global_variables.server_list = [
+                        server for server in global_variables.server_list if server["server_uuid"] != global_variables.neighbor["server_uuid"]]
 
-                # form the ring after neighbor server has been removed from the server list
-                participants_ring.form_ring()
+                    # form the ring after neighbor server has been removed from the server list
+                    participants_ring.form_ring()
 
-                # set the new neighbor of the server
-                participants_ring.update_neighbor()
+                    # set the new neighbor of the server
+                    participants_ring.update_neighbor()
 
-                # send broadcast message to all servers with the updated sorted group_view
-                broadcast.broadcast_sender(
-                    global_variables.ENVIRONMENT_MESSAGE)
+                    # send broadcast message to all servers with the updated sorted group_view
+                    broadcast.broadcast_sender(
+                        global_variables.ENVIRONMENT_MESSAGE)
 
-                # if the previous neighbor has been the leader server start new leader elections
-                if (old_neighbor_server_uuid == global_variables.leader_server.get("leader_server_uuid")):
-                    leader_election.start_leader_election()
+                    # if the previous neighbor has been the leader server start new leader elections
+                    if (old_neighbor_server_uuid == global_variables.leader_server.get("leader_server_uuid")):
+                        leader_election.start_leader_election()
+
+                    heartbeat_count = 0
 
         else:
             # wait for 5 seconds to try sending the heartbeat message again and check if the server has a neighbor now

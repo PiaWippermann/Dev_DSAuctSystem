@@ -13,7 +13,7 @@ def form_ring():
     # sort the server_list entries
     # the server_list is an array of uuids
     global_variables.server_list.sort(key=lambda x: x.get("server_uuid"))
-    print("Sorted server list {global_variables.server_list}")
+    print(f"Sorted server list {global_variables.server_list}")
 
 
 # Get the current server's neighbor
