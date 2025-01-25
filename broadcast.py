@@ -1,5 +1,13 @@
-# File that contains functions regarding broadcast messages
-# Different types of broadcast messages are handled here also depending on the current server's role
+"""
+broadcast.py
+
+File that contains functions regarding broadcast messages.
+Different types of broadcast messages are handled here also depending on the current server's role.
+
+- broadcast listener
+- broadcast sender
+
+"""
 
 # python imports
 import json
@@ -24,11 +32,13 @@ DYNAMIC_DISCOVERY_BROADCAST_TIMEOUT = 2
 # FUNCTION DEFINITIONS
 
 
-# Method called when the server starts
-# Broadcast message is sent to all computers in LAN
-# Server is waiting for response from the leader server if there is already one
-# If there is no leading server the leader election is run
 def broadcast_sender(broadcast_message):
+    """
+    Method called when the server starts
+    Broadcast message is sent to all computers in LAN
+    Server is waiting for response from the leader server if there is already one
+    If there is no leading server the leader election is run
+    """
     # Create a UDP socket
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -60,8 +70,13 @@ def broadcast_sender(broadcast_message):
             print("=" * 50)
 
 
-# Called after the server
 def broadcast_listener():
+    """
+    Server listen to broadcast messages from other servers.
+    Different types of broadcast messages are handled differnt.
+    If the current server is not the leader some messages are also ignored.
+
+    """
     listen_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

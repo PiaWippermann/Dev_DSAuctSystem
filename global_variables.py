@@ -1,7 +1,10 @@
+"""
+Global variables accessible in all files
+
+"""
+
 import uuid
 import socket
-
-# GLOBAL VARIABLES THAT NEED TO BE ACCESSIBLE IN MULTIPLE FILES
 
 is_client = False
 

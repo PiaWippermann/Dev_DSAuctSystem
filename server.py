@@ -1,4 +1,10 @@
-from concurrent.futures import thread
+"""
+File that is run to start a server.
+
+All relevant listeners and senders for the server are run in a separate thread after the dynamic discovery of hosts is done.
+
+"""
+
 import threading
 
 # import auction functions in other files

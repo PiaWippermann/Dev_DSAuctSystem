@@ -1,3 +1,13 @@
+"""
+auction_handler.py
+
+This module manages the auction process, including:
+- Listening to clients
+- Handling clients and their messages
+- Listening to auction update messages
+
+"""
+
 import json
 import socket
 import threading
@@ -11,6 +21,12 @@ BROADCAST_PORT_AUCTION = 58002
 
 
 def client_listener():
+    """
+    Listening to client connections. Each time a new client connects the client messages are handled in a separat thread.
+    Function is run by the server and not by the clients.
+
+    """
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(("0.0.0.0", TCP_PORT))
@@ -25,6 +41,11 @@ def client_listener():
 
 
 def handle_client(client_socket, client_address):
+    """
+    Called when a client tries to connect to the server.
+    Continuously listens to incoming client messages and handles the messages depending on the current auction status.
+
+    """
     print(f"Client {client_address[0]} connected.")
 
     # init the client address as a string
@@ -32,10 +53,10 @@ def handle_client(client_socket, client_address):
 
     while True:
         try:
-            # Empfang der Nachricht vom Client
+            # receive client message
             message = client_socket.recv(1024).decode('utf-8')
             if not message:
-                break  # Verbindung geschlossen
+                break  # ignore empty messages
 
             if (global_variables.is_auction_active):
                 # check if the sender client address equals the owner address of the currently active element
@@ -74,7 +95,8 @@ def handle_client(client_socket, client_address):
                 response = "OK"
                 # Antwort an den Client senden
                 client_socket.send(response.encode('utf-8'))
-
+        # client disconnected
+        # check if the currently active auction is initialized by the offline client
         except ConnectionResetError:
             print(f"Client {client_address} disconnected.")
 
@@ -88,6 +110,11 @@ def handle_client(client_socket, client_address):
 
 
 def handle_new_client_bid(bid, client_address):
+    """
+    Function called when the incoming client messages contains a new bid for the active auction element.
+    All servers and clients are informed about this new bid via a broadcast message.
+
+    """
     auction_update_message = {
         "type": "auction_element_update",
         "active_auction_element": {
@@ -106,6 +133,11 @@ def handle_new_client_bid(bid, client_address):
 
 
 def handle_new_client_auction_element(element_name, client_address):
+    """
+    Function called when the incoming client messages contains a new bid element.
+    All servers and clients are informed about this new bid element via a broadcast message.
+
+    """
     auction_update_message = {
         "type": "auction_element_new",
         "active_auction_element": {
@@ -124,9 +156,12 @@ def handle_new_client_auction_element(element_name, client_address):
     auction_update_sender(auction_update_message)
 
 
-# All other servers and clients are updated with the given message
 def auction_update_sender(auction_message):
-    # address can be '255.255.255.255' or the leader_server_address depending on the sender
+    """
+    Sends a boradcast message to update all clients and servers in the system.
+    The auction message can be different depending on the user input and the current auction status.
+
+    """
     auction_update_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     auction_update_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     auction_update_socket.setsockopt(
@@ -135,10 +170,12 @@ def auction_update_sender(auction_message):
         auction_message).encode(), ("255.255.255.255", BROADCAST_PORT_AUCTION))
 
 
-# Listener that runs for the whole lifetime of the client or server that has been started
-# Global updates on the action element are published by the leader server
-# The global variables regarding the auction are reininitialized
 def auction_update_listener():
+    """
+    Clients and server run this function such that they listen to incoming messages regarding auction updates.
+    Different types of auction messages are handled in a different way.
+
+    """
     auction_update_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     auction_update_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     auction_update_socket.setsockopt(
