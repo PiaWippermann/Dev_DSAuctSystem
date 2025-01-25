@@ -91,7 +91,7 @@ def handling_messages():
 
             socket_socketname = client_socket.getsockname()
             if (len(socket_socketname) == 2):
-                global_variables.client_address = f"({socket_socketname[0]}, {socket_socketname[1]})"
+                global_variables.client_address = socket_socketname[0]
 
             while True:
                 if (global_variables.is_auction_active):
