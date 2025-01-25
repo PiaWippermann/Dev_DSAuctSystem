@@ -169,8 +169,8 @@ def auction_update_listener():
         # new highest bid for the active element
         elif (message.get("type") == "auction_element_update"):
             if (global_variables.active_auction_element.get("highest_bid") < message["active_auction_element"].get("highest_bid")):
-                global_variables.active_auction_element["highest_bid"] = message["active_auction_element"].get(
-                    "highest_bid")
+                global_variables.active_auction_element["highest_bid"] = message.get(
+                    "active_auction_element")
 
                 # inform the user that the highest bid has been updated
                 if (global_variables.is_client):
