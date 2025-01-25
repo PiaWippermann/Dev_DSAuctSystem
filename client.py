@@ -25,14 +25,6 @@ BROADCAST_PORT_AUCTION = 58002
 DYNAMIC_DISCOVERY_BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 5973
 
-# Messages for identification
-BROADCAST_MESSAGE = 'Could I join the Chatroom?'
-BROADCAST_ANSWER_SERVER = 'Welcome'
-
-# Local host information
-MY_HOST = socket.gethostname()
-c_address = socket.gethostbyname(MY_HOST)
-
 server_data = None
 
 
