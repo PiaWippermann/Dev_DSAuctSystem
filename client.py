@@ -98,7 +98,7 @@ def handling_messages():
                     # check if the client is the owner of the currently active auction element
                     if (global_variables.active_auction_element.get("bid_owner_client_address") == global_variables.client_address):
                         user_input = input(
-                            f"There is an active auction element made by you. Type 'break' when you want to sell your element.\n")
+                            f"There is an active auction element: '{global_variables.active_auction_element.get('element_name')}' made by you. Type 'break' when you want to sell your element.\n")
                     else:
                         user_input = input(
                             f"### ACTIVE AUCTION ###\nAuction element: '{global_variables.active_auction_element['element_name']}': \n Currently the highest bid is: {global_variables.active_auction_element['highest_bid']}\n Enter your bid:\n")
