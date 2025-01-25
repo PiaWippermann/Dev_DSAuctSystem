@@ -111,13 +111,7 @@ def handling_messages():
                     if (global_variables.active_auction_element.get("bid_owner_client_address") == global_variables.client_address):
                         if (user_input == "break"):
                             global_variables.is_auction_active = False
-                            bid_message = str.encode(
-                                json.dumps(
-                                    {
-                                        "type": "auction_completed"
-                                    }
-                                )
-                            )
+                            message = str.encode(user_input)
                         else:
                             continue
                     else:
@@ -128,20 +122,12 @@ def handling_messages():
                         try:
                             # only integers are taken from the user
                             # convert input to integer
-                            user_input = int(user_input)
+                            bid = int(user_input)
 
-                            if (global_variables.active_auction_element.get("highest_bid") > user_input):
+                            if (global_variables.active_auction_element.get("highest_bid") > bid):
                                 print("You need to make a higher bid!")
 
-                            bid_message = str.encode(
-                                json.dumps(
-                                    {
-                                        "client_address": global_variables.client_address,
-                                        "bid": user_input,
-                                        "type": "auction_element_update"
-                                    }
-                                )
-                            )
+                            message = str.encode(user_input)
                         except ValueError:
                             print(f"You need to make a bid! \n")
                             continue
@@ -150,19 +136,10 @@ def handling_messages():
                         print("Empty message. Please try again. \n")
                         continue
 
-                    bid_message = str.encode(
-                        json.dumps(
-                            {
-                                "bid_owner_client_address": global_variables.client_address,
-                                "client_address": global_variables.client_address,
-                                "element_name": user_input,
-                                "type": "auction_element_new"
-                            }
-                        )
-                    )
+                    message = str.encode(user_input)
 
                 # Send message to server
-                client_socket.send(bid_message)
+                client_socket.send(message)
 
                 # Antwort vom Server empfangen
                 response = client_socket.recv(1024).decode('utf-8')

@@ -26,6 +26,11 @@ def client_listener():
 
 def handle_client(client_socket, client_address):
     print(f"Client {client_address} connected.")
+
+    # init the client address as a string
+    if (len(client_address) == 2):
+        client_address = f"({client_address[0]}, {client_address[1]})"
+
     while True:
         try:
             # Empfang der Nachricht vom Client
@@ -33,14 +38,9 @@ def handle_client(client_socket, client_address):
             if not message:
                 break  # Verbindung geschlossen
 
-            try:
-                bid_element = json.loads(message)
-            except json.JSONDecodeError as e:
-                print("No JSON object received from the client.\n")
-                continue
-
             if (global_variables.is_auction_active):
-                if (bid_element.get("type") == "auction_completed"):
+                # check if the sender client address equals the owner address of the currently active element
+                if (global_variables.active_auction_element.get("bid_owner_client_address") == client_address):
                     auction_completed_message = {
                         "type": "auction_completed",
                         "active_auction_element": global_variables.active_auction_element
@@ -50,15 +50,11 @@ def handle_client(client_socket, client_address):
                     response = "OK"
                     # Antwort an den Client senden
                     client_socket.send(response.encode('utf-8'))
-                elif (bid_element.get("type") == "auction_element_update"):
+                # new bid is incoming
+                else:
                     try:
-                        bid = bid_element.get("bid")
-                        if (bid):
-                            # convert input to integer
-                            bid = int(bid)
-                            bid_element["bid"] = bid
-                        else:
-                            continue
+                        # convert input to integer
+                        bid = int(message)
                     except ValueError:
                         print(f"User did not send a new highest bid!\n")
                         continue
@@ -66,14 +62,14 @@ def handle_client(client_socket, client_address):
                         response = "OK"
 
                         if (bid > global_variables.active_auction_element.get("highest_bid")):
-                            handle_new_client_bid(bid_element)
+                            handle_new_client_bid(bid, client_address)
                         else:
                             response = "There is a higher bid than yours!\n"
                         # Antwort an den Client senden
                         client_socket.send(response.encode('utf-8'))
             else:
                 # string that is received from the user is taken as a new element_name
-                handle_new_client_auction_element(bid_element)
+                handle_new_client_auction_element(message, client_address)
 
                 # send response to client such that it can continue
                 response = "OK"
@@ -82,10 +78,8 @@ def handle_client(client_socket, client_address):
 
         except ConnectionResetError:
             print(f"Client {client_address} disconnected.")
-            if (len(client_address) == 2):
-                offline_client_address = f"({client_address[0]}, {client_address[1]})"
 
-            if (global_variables.active_auction_element.get("bid_owner_client_address") == offline_client_address):
+            if (global_variables.active_auction_element.get("bid_owner_client_address") == client_address):
                 auction_candelled_message = {
                     "type": "auction_cancelled"
                 }
@@ -94,14 +88,14 @@ def handle_client(client_socket, client_address):
             break
 
 
-def handle_new_client_bid(bid):
+def handle_new_client_bid(bid, client_address):
     auction_update_message = {
         "type": "auction_element_update",
         "active_auction_element": {
             "element_name": global_variables.active_auction_element.get("element_name"),
             "bid_owner_client_address": global_variables.active_auction_element.get("bid_owner_client_address"),
-            "highest_bid": bid.get("bid"),
-            "client_address": bid.get("client_address")
+            "highest_bid": bid,
+            "client_address": client_address
         },
         "sender_server_uuid": global_variables.server_uuid
     }
@@ -112,14 +106,14 @@ def handle_new_client_bid(bid):
     auction_update_sender(auction_update_message)
 
 
-def handle_new_client_auction_element(bid_element):
+def handle_new_client_auction_element(element_name, client_address):
     auction_update_message = {
         "type": "auction_element_new",
         "active_auction_element": {
-            "element_name": bid_element.get("element_name"),
+            "element_name": element_name,
             "highest_bid": 0,
-            "client_address": bid_element.get("client_address"),
-            "bid_owner_client_address": bid_element.get("bid_owner_client_address")
+            "client_address": client_address,
+            "bid_owner_client_address": client_address
         },
         "sender_server_uuid": global_variables.server_uuid
     }
