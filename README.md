@@ -25,7 +25,7 @@ This is a Python-based distributed auction system that allows clients to place i
 
 1. Clone the repository:
    ```bash   
-   git clone https://github.com/<your-username>/Dev_DSAuctSystem.git
+   git clone https://github.com/PiaWippermann/Dev_DSAuctSystem.git
 
 ## Usage
 
